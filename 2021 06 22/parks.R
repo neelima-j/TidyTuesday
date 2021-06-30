@@ -35,7 +35,7 @@ skim_without_charts(df)
 
 
 
-# Seattle vs New York over the years -------------------------------------------
+# Extracting Seattle New York---------------------------------------------------
 df <- df %>%
   subset(city %in% c("New York", "Seattle"))
 
