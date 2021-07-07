@@ -2,6 +2,7 @@ library(tidyverse)
 library(ggplot2)
 library(tidytuesdayR)
 library(skimr)
+library(ggbump)
 
 # Load data --------------------------------------------------------------------
 tt_data <- tt_load("2021-06-22")
@@ -35,26 +36,53 @@ skim_without_charts(df)
 
 
 
+# Cleaning ---------------------------------------------------------------------
+#' TODO: Washington DC typo
+df$city <- str_replace(df$city, "^[wW]ashington.*", "Washington D.C.")
+
+#' TODO: percentage variable are char
+df <- df %>% 
+  mutate(park_pct_city_data = parse_number(park_pct_city_data),
+         pct_near_park_data = parse_number(pct_near_park_data),
+         spend_per_resident_data = parse_number(spend_per_resident_data)) %>% 
+  mutate(across(where(is.character), factor)) %>% 
+  select(-city_dup)
+
+# Extracting Seattle New York---------------------------------------------------
+df_choose <- df %>%
+  subset(city %in% c("New York", "Seattle"))
+
+
+# EXPLORATION ------------------------------------------------------------------
+
+#' Top ranks usual suspects
+top <- df %>% 
+  filter(rank < 11) %>% 
+  select(year, city) %>% 
+  group_by(city) %>% 
+  summarise (year_l = list(year))
+
+
 # Extracting Seattle New York---------------------------------------------------
 df <- df %>%
   subset(city %in% c("New York", "Seattle"))
 
-df %>% ggplot(aes(x=year,y=rank,group = city,color=city, label = rank))+
-  geom_line()+
-  geom_point()+
-  scale_y_reverse()+
-  geom_text(aes(x=year,y=rank-.5))+
-  theme_classic()+
-  annotate("text",
-           x = 2018,
-           y = 5,
-           label = "New York",
-           color = "Red") +
-  annotate("text",
-           x = 2018,
-           y = 13,
-           label = "Seattle",
-           color = "dark Green")+
+
+
+# PLOT -------------------------------------------------------------------------
+p1 <- ggplot()+
+  geom_bump(data = df, aes(x=year,y=rank,group = city),color = "grey")+
+  geom_bump(data = df_choose, aes(x=year,y=rank,group = city,color=city))+
+  geom_point(data = df_choose, aes(x=year,y=rank,group = city,color=city))+
+  scale_y_reverse()   #Because a lower rank is better
+  
+p1 + theme_minimal() +
+  labs(title = "My brother moved from New York to Seattle",
+       subtitle = "City rankings: ParkScore index, a comparison of park systems across the 100 most populated cities in the United States. 
+       The index measures park systems according to access, investment, amenities, acreage, equity",
+       y = "Rank",
+       x = " ",
+       caption = "Visualization: Neelima-J | Source: Trust for Public Land ParkScore index| #TidyTuesday")+
   theme(
     plot.title = element_text(
       color = "dark grey",
@@ -64,95 +92,14 @@ df %>% ggplot(aes(x=year,y=rank,group = city,color=city, label = rank))+
     plot.caption = element_text(color = "black"),
     legend.position = 'none',
     panel.border = element_blank()
-  )
-ggsave("seattle_ny_ranks.png")  
-  
-#---------------
-df %>% ggplot(aes(x=year,y=total_pct,group = city,color=city, label = rank))+
-  geom_line()+
-  geom_point(color = "white",size=5)+
-  geom_text(aes(x=year,y=total_pct))+
- ylim(50,85)+
-    theme_classic()+
-  labs(title = "Scores are ~constant, Ranks are changing",
-       subtitle = "Other cities are improving",
-       y = "Percentage score")+
-  annotate("label",
-           x = 2017,
-           y = 76,
+  )+
+  annotate("text",
+           x = 2020.5,
+           y = 7,
            label = "New York",
            color = "Red") +
-  annotate("label",
-           x = 2017,
-           y = 71,
-           label = "Seattle",
-           color = "Blue")+
   annotate("text",
-           x = 2013,
-           y = 70,
-           label = "|\nRank\n|",
-           color = "dark grey") +
-  theme(
-    plot.title = element_text(
-      color = "dark grey",
-      size = 12,
-      hjust = 1
-    ),
-    plot.subtitle = element_text(
-      color = "dark grey",
-      hjust = 1
-    ),
-    plot.caption = element_text(color = "black"),
-    legend.position = 'none',
-    panel.border = element_blank(),
-    axis.title.x = element_blank()
-  )
-ggsave("seattle_ny_ranks_2.png")  
-
-
-df_2020 <- df %>% 
-  filter(year == 2020)
-
-df_2020 %>% 
-  pivot_longer(
-    cols = med_park_size_data :park_benches, 
-    names_to = "type", 
-    values_to = "values"
-    )
-#---------------
-p <- all_fish %>%
-  filter(year > 1915) %>%
-  group_by(year, country) %>%
-  summarise(n = sum(fish)) %>%
-  mutate(percentage = n * 100 / sum(n)) %>%
-  ggplot(aes(x = year, y = percentage, fill = country)) +
-  geom_area(alpha = 0.6 ,
-            size = 1,
-            colour = "white")
-
-p +  labs(title = "100 years of Fishing the Great Lakes: 1916 to 2015",
-          fill = "",
-          caption = "Visualization: Neelima-J | Source: Great Lakes Fishery Commission | #TidyTuesday") +
-  scale_y_continuous(expand = c(0, 0)) +
-  scale_x_continuous(expand = c(0, 0)) +
-  theme_bw() +
-  annotate("text",
-           x = 2000,
-           y = 75,
-           label = "Canada") +
-  annotate("text",
-           x = 2000,
+           x = 2020.5,
            y = 15,
-           label = "USA") +
-  
-  theme(
-    plot.title = element_text(
-      color = "dark grey",
-      size = 12,
-      hjust = 1
-    ),
-    plot.caption = element_text(color = "black"),
-    legend.position = 'none',
-    panel.border = element_blank()
-  ) +
-  labs(x = "", y = "%")
+           label = "Seattle",
+           color = "dark Cyan")
