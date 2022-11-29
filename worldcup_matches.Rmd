@@ -1,0 +1,65 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r load_data}
+# Get the Data
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2022-11-29')
+tuesdata <- tidytuesdayR::tt_load(2022, week = 48)
+
+wcmatches <- tuesdata$wcmatches
+
+# Or read in the data manually
+
+wcmatches <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-29/wcmatches.csv')
+worldcups <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-11-29/worldcups.csv')
+
+```
+
+```{r examine_data}
+skim_without_charts(worldcups)
+```
+
+Goals scored over Years with crowd size as size.
+Do more goals get scored when more people watch?
+```{r plot_1}
+worldcups<- worldcups %>% 
+  mutate(attendance_bin = cut(attendance, breaks=9)) %>% 
+  mutate(goals_per_match = goals_scored/games)
+```
+
+```{r}
+worldcups %>% 
+  ggplot(aes(x = year, y = goals_per_match)) + 
+  geom_point( aes(size = attendance_bin))+
+  geom_line()+
+  theme_minimal()+
+  theme(legend.position = "none",
+        plot.title = element_text(size = 22),
+        plot.caption = element_text(size = 22),
+        plot.subtitle = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        axis.title.y = element_text(size = 20),
+        strip.text = element_text(size = 20)) +
+  labs(x = "Year",
+       y = "",
+       title = "Title",
+       subtitle = "Subtitle",
+       caption = "Visualization: Neelima-J | Source: Kaggle | #TidyTuesday") 
+```
+
+
+Stadium sizes and Attendance: USA has the biggest stadia?
+Teams better organized, thus fewer goals? 
